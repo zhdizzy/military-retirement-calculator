@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Military Retirement Pay Calculator | The Better Veteran</title>
+    <meta name="description" content="Calculate your military retirement pay for all four systems — High-3, BRS, Final Pay, and REDUX. Includes CRDP vs. CRSC optimizer with dependent-adjusted VA rates, Reserve/Guard points, SBP, and lifetime value projections.">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <meta property="og:title" content="Military Retirement Pay Calculator | The Better Veteran">
+    <meta property="og:description" content="The most comprehensive military retirement calculator available — all four systems, CRDP vs. CRSC optimizer, Reserve/Guard points, SBP, and lifetime projections.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tools.thebetterveteran.com/military-retirement/">
+    <link rel="canonical" href="https://tools.thebetterveteran.com/military-retirement/">
+    <link rel="stylesheet" href="style.css">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Military Retirement Pay Calculator",
+        "description": "Calculate military retirement pay across all four systems with CRDP vs. CRSC optimization, Reserve/Guard support, SBP, and dependent-adjusted VA rates.",
+        "url": "https://tools.thebetterveteran.com/military-retirement/",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Organization", "name": "The Better Veteran", "url": "https://www.thebetterveteran.com/" }
+    }
+    </script>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header-container">
+        <div class="brand-header">
+            <a href="https://www.thebetterveteran.com/" class="home-btn" target="_blank" rel="noopener noreferrer">Home</a>
+            <span class="brand-name">
+                <span class="brand-the">The </span>
+                <span class="brand-better">Better </span>
+                <span class="brand-veteran">Veteran</span>
+            </span>
+        </div>
+        <h1>Military Retirement Pay Calculator</h1>
+        <p class="tool-subtitle">Every system. Every component. Every variable — in one place.</p>
+    </div>
+
+    <div class="dashboard">
+
+        <!-- HERO CARD -->
+        <div class="dash-row">
+            <div id="hero-card" class="hero-card-placeholder">
+                <p class="hero-placeholder-text">Fill in your service profile below to see your estimated retirement pay.</p>
+            </div>
+        </div>
+
+        <!-- ROW 1: Retirement Projection (full width, two-column grid) -->
+        <div class="dash-row">
+            <div class="section-container">
+                <h2>Retirement Projection</h2>
+                <p class="section-subtitle">Tell us about your service and retirement to calculate your pay.</p>
+
+                <!-- Component toggle — full width -->
+                <label>Component:</label>
+                <div class="component-toggle-row">
+                    <button type="button" class="toggle-btn active" id="comp-active-btn">Active Duty</button>
+                    <button type="button" class="toggle-btn" id="comp-reserve-btn">Reserve / Guard</button>
+                    <button type="button" class="toggle-btn" id="comp-chapter61-btn">Medical Retirement</button>
+                </div>
+                <input type="hidden" id="component" value="active">
+
+                <!-- Two-column input grid -->
+                <div class="projection-grid">
+
+                    <!-- LEFT COLUMN -->
+                    <div class="projection-col">
+
+                        <label for="retirement-rank-category">Rank Category at Retirement:</label>
+                        <select id="retirement-rank-category">
+                            <option value="enlisted">Enlisted</option>
+                            <option value="warrant">Warrant Officer</option>
+                            <option value="officer">Commissioned Officer</option>
+                        </select>
+
+                        <label for="retirement-rank">Rank at Retirement:</label>
+                        <select id="retirement-rank"></select>
+
+                        <label for="tig">Time in Grade (TIG) — Optional:</label>
+                        <input type="number" id="tig" min="1" max="40" placeholder="e.g. 2">
+                        <p class="input-hint">Refines your High-3 estimate if you were recently promoted. Leave blank if 3+ years at this rank.</p>
+
+                        <label for="retirement-yos" id="retirement-yos-label">Years of Service at Retirement:</label>
+                        <input type="number" id="retirement-yos" min="1" max="45" value="20" placeholder="e.g. 20">
+
+                        <label for="current-yos">Current Years of Service:</label>
+                        <input type="number" id="current-yos" min="0" max="45" value="15" placeholder="e.g. 15">
+                        <p class="input-hint">Used to estimate your retirement age for the lifetime value projection.</p>
+
+                        <div class="high3-section">
+                            <label>High-3 Average Monthly Basic Pay:</label>
+                            <div class="high3-display" id="high3-display">
+                                <span class="high3-auto-label">Auto-estimated:</span>
+                                <span class="high3-auto-value" id="high3-auto-value">—</span>
+                            </div>
+                            <div class="high3-override-row">
+                                <input type="checkbox" id="high3-override-check">
+                                <label for="high3-override-check" class="checkbox-label">Enter my own High-3 figure</label>
+                            </div>
+                            <div id="high3-override-input" style="display:none;">
+                                <input type="number" id="high3-manual" placeholder="e.g. 5800" min="1000" max="25000">
+                                <p class="input-hint">Average monthly basic pay for your highest 36 consecutive months.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN -->
+                    <div class="projection-col">
+
+                        <label for="current-age">Current Age:</label>
+                        <input type="number" id="current-age" min="18" max="70" value="38" placeholder="e.g. 38">
+                        <p class="input-hint">Used to calculate lifetime retirement value to age 85.</p>
+
+                        <label for="diems">DIEMS — Optional:</label>
+                        <input type="date" id="diems">
+                        <p class="input-hint">Date of Initial Entry into Military Service. Auto-detects your retirement system.</p>
+                        <div class="detected-system-badge" id="detected-system-badge" style="display:none;"></div>
+
+                        <label for="retirement-system">Retirement System:</label>
+                        <select id="retirement-system">
+                            <option value="high-3">High-3 (1980–2017 entrants)</option>
+                            <option value="brs">Blended Retirement System — BRS (2018+ or opt-in)</option>
+                            <option value="final-pay">Final Pay (pre-Sept 1980 entrants)</option>
+                            <option value="redux">REDUX / CSB ($30K Career Status Bonus at 15 yrs)</option>
+                        </select>
+                        <p class="input-hint">Auto-detected from DIEMS. Override if you opted into BRS during the 2018 window.</p>
+
+                        <label for="state-select">State of Residence:</label>
+                        <select id="state-select">
+                            <option value="">— Select your state —</option>
+                        </select>
+                        <p class="input-hint">26+ states fully exempt military retirement pay from state income tax.</p>
+
+                        <!-- Chapter 61 only -->
+                        <div id="chapter61-section" style="display:none;">
+                            <div class="section-divider"></div>
+                            <p class="section-label">Medical Retirement (Chapter 61)</p>
+                            <p class="input-hint" style="margin-top:0;">30%+ DoD rating = retirement pay. Below 30% = severance only.</p>
+                            <label for="dod-rating">DoD Disability Rating (from PEB — not your VA rating):</label>
+                            <select id="dod-rating">
+                                <option value="10">10% (severance only)</option>
+                                <option value="20">20% (severance only)</option>
+                                <option value="30" selected>30%</option>
+                                <option value="40">40%</option>
+                                <option value="50">50%</option>
+                                <option value="60">60%</option>
+                                <option value="70">70%</option>
+                                <option value="80">80%</option>
+                                <option value="90">90%</option>
+                                <option value="100">100%</option>
+                            </select>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Reserve/Guard only — full width below grid -->
+                <div id="reserve-section" style="display:none;">
+                    <div class="section-divider"></div>
+                    <p class="section-label">Reserve / National Guard</p>
+                    <div class="projection-grid">
+                        <div class="projection-col">
+                            <label for="total-points">Total Lifetime Retirement Points:</label>
+                            <input type="number" id="total-points" min="50" max="8000" placeholder="e.g. 2850">
+                            <p class="input-hint">Find on your NGB-23 or equivalent points statement.</p>
+                            <div class="points-estimator">
+                                <p class="input-hint" style="margin-bottom:8px;"><strong>Don't have your points?</strong> Estimate them:</p>
+                                <div class="points-est-row">
+                                    <label for="qualifying-years">Qualifying Years:</label>
+                                    <input type="number" id="qualifying-years" min="20" max="45" placeholder="e.g. 22">
+                                </div>
+                                <div class="points-est-row">
+                                    <label for="deployment-years">Years Deployed (approx):</label>
+                                    <input type="number" id="deployment-years" min="0" max="20" placeholder="e.g. 3" value="0">
+                                </div>
+                                <button type="button" id="estimate-points-btn" class="secondary-btn">Estimate My Points</button>
+                                <p id="points-estimate-result" class="input-hint" style="margin-top:8px;"></p>
+                            </div>
+                        </div>
+                        <div class="projection-col">
+                            <label for="deployment-periods">90-Day Deployment Periods (post Jan 28, 2008):</label>
+                            <input type="number" id="deployment-periods" min="0" max="40" value="0" placeholder="e.g. 4">
+                            <p class="input-hint">Each 90-day period reduces your retirement age by 3 months (minimum age 50).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario + SS toggles -->
+                <div class="section-divider"></div>
+                <div class="toggle-actions-row">
+                    <button type="button" class="scenario-toggle-btn" id="scenario-toggle-btn">+ Compare a second retirement scenario</button>
+                    <button type="button" class="scenario-toggle-btn" id="ss-toggle-btn">+ Add Social Security Estimate</button>
+                </div>
+
+                <div id="scenario-section" style="display:none;">
+                    <p class="input-hint" style="margin-top:8px;">Enter an alternative retirement year to compare side-by-side.</p>
+                    <label for="scenario-yos">Retire at (Years of Service):</label>
+                    <input type="number" id="scenario-yos" min="20" max="45" placeholder="e.g. 22">
+                    <div id="scenario-result"></div>
+                </div>
+
+                <div id="ss-section" style="display:none;">
+                    <p class="input-hint" style="margin-top:8px;">Find your estimate at <strong>SSA.gov/myaccount</strong>. Enter your full retirement age (FRA) monthly amount.</p>
+                    <label for="ss-fra-benefit">Monthly SS Benefit at Full Retirement Age (age 67):</label>
+                    <input type="number" id="ss-fra-benefit" min="0" max="10000" placeholder="e.g. 2200">
+                    <div id="ss-result"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ROW 2: VA & Disability Pay Optimizer (full width) -->
+        <div class="dash-row">
+            <div class="section-container" id="va-optimizer-section">
+                <div class="va-optimizer-header">
+                    <h2>VA Disability & Retirement Pay Optimizer</h2>
+                    <p class="section-subtitle">Enter your VA rating to compare CRDP vs. CRSC and see your actual take-home pay.</p>
+                </div>
+
+                <div class="va-optimizer-grid">
+
+                    <!-- Left: VA inputs -->
+                    <div class="va-inputs">
+                        <label for="tax-bracket">Federal Tax Bracket:</label>
+                        <select id="tax-bracket">
+                            <option value="0.10">10%</option>
+                            <option value="0.12">12%</option>
+                            <option value="0.22" selected>22%</option>
+                            <option value="0.24">24%</option>
+                            <option value="0.32">32%</option>
+                            <option value="0.35">35%</option>
+                        </select>
+                        <p class="input-hint">Only used for the CRDP vs. CRSC comparison below — it determines whether CRSC's tax-free payment beats CRDP's fully restored (taxable) pension.</p>
+
+                        <label for="va-rating">VA Disability Rating:</label>
+                        <select id="va-rating">
+                            <option value="0">No VA rating</option>
+                            <option value="10">10%</option>
+                            <option value="20">20%</option>
+                            <option value="30">30%</option>
+                            <option value="40">40%</option>
+                            <option value="50">50%</option>
+                            <option value="60">60%</option>
+                            <option value="70">70%</option>
+                            <option value="80">80%</option>
+                            <option value="90">90%</option>
+                            <option value="100">100%</option>
+                        </select>
+
+                        <label for="combat-related">Are your disabilities combat-related?</label>
+                        <select id="combat-related">
+                            <option value="none">No / Not applicable</option>
+                            <option value="all">Yes — all disabilities are combat-related</option>
+                            <option value="partial">Partially — only some are combat-related</option>
+                        </select>
+
+                        <div id="partial-combat-row" style="display:none;">
+                            <label for="combat-rating">Combat-Related Rating Only:</label>
+                            <select id="combat-rating">
+                                <option value="10">10%</option>
+                                <option value="20">20%</option>
+                                <option value="30">30%</option>
+                                <option value="40">40%</option>
+                                <option value="50">50%</option>
+                                <option value="60">60%</option>
+                                <option value="70">70%</option>
+                                <option value="80">80%</option>
+                                <option value="90">90%</option>
+                                <option value="100">100%</option>
+                            </select>
+                            <p class="input-hint">Enter the combined rating for only the conditions your branch has approved as combat-related.</p>
+                        </div>
+
+                        <div class="section-divider"></div>
+                        <p class="section-label">Special Monthly Compensation (SMC)</p>
+
+                        <div class="smc-k-row">
+                            <input type="checkbox" id="va-smc-k">
+                            <label for="va-smc-k" class="checkbox-label">SMC-K</label>
+                            <select id="va-smc-k-count" disabled>
+                                <option value="1">×1</option>
+                                <option value="2">×2</option>
+                                <option value="3">×3</option>
+                                <option value="4">×4</option>
+                            </select>
+                            <span class="smc-badge">+$139.87/ea</span>
+                        </div>
+                        <p class="input-hint">SMC-K applies for specific anatomical losses or loss of use (e.g. loss of a creative organ, hand, foot). Each adds $139.87/month regardless of rating.</p>
+
+                    </div>
+
+                    <!-- Right: Dependents -->
+                    <div class="va-dependents" id="va-dependents">
+                        <p class="section-label">Dependents on VA Claim</p>
+                        <p class="input-hint" style="margin-top:0;">Dependents significantly affect your VA compensation at 30%+. Include anyone on your VA award letter.</p>
+
+                        <label for="va-married">Marital Status:</label>
+                        <select id="va-married">
+                            <option value="no">Single / Not married</option>
+                            <option value="yes">Married</option>
+                        </select>
+
+                        <label for="va-children-under18">Children Under 18:</label>
+                        <input type="number" id="va-children-under18" min="0" max="15" value="0">
+
+                        <label for="va-children-over18">Children Over 18 in School:</label>
+                        <input type="number" id="va-children-over18" min="0" max="10" value="0">
+
+                        <label for="va-dep-parents">Dependent Parents:</label>
+                        <select id="va-dep-parents">
+                            <option value="0">None</option>
+                            <option value="1">1 Parent</option>
+                            <option value="2">2 Parents</option>
+                        </select>
+
+                        <div class="checkbox-row" id="spouse-aa-row-va" style="display:none;">
+                            <input type="checkbox" id="va-spouse-aa">
+                            <label for="va-spouse-aa" class="checkbox-label">Spouse receives Aid &amp; Attendance</label>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- CRDP/CRSC result (renders after VA rating entered) -->
+                <div id="crdp-crsc-result"></div>
+
+            </div>
+        </div>
+
+        <!-- ROW 3: SBP (full width) -->
+        <div class="dash-row">
+            <div class="section-container" id="sbp-section">
+                <h2>Survivor Benefit Plan (SBP)</h2>
+                <p class="section-subtitle">SBP continues a monthly payment to your spouse after you die. The premium is deducted from your retirement pay.</p>
+
+                <div class="sbp-grid">
+                    <div>
+                        <label for="sbp-elect">Do you plan to elect SBP?</label>
+                        <div class="toggle-row">
+                            <button type="button" class="toggle-btn active" id="sbp-yes-btn" data-value="yes">Yes</button>
+                            <button type="button" class="toggle-btn" id="sbp-no-btn" data-value="no">No</button>
+                        </div>
+                    </div>
+                    <div id="sbp-coverage-row">
+                        <label for="sbp-coverage">Coverage Amount:</label>
+                        <select id="sbp-coverage">
+                            <option value="1.0">Full retirement pay (recommended)</option>
+                            <option value="0.75">75% of retirement pay</option>
+                            <option value="0.50">50% of retirement pay</option>
+                            <option value="0.25">25% of retirement pay</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="sbp-result"></div>
+
+                <div class="dic-sbp-notice">
+                    <p class="dic-sbp-notice-headline">SBP + DIC: Your spouse now gets both — no offset.</p>
+                    <p>As of January 2023, the "widow's tax" is fully eliminated. If your spouse receives DIC (VA survivor benefits after a service-connected death), it no longer reduces their SBP payment. They receive both in full. Many older resources still warn about this offset — it no longer exists.</p>
+                </div>
+
+                <p class="section-footnote">SBP election is made at retirement and is very difficult to change. Premium is 6.5% of your covered base amount. Surviving spouse receives 55% of that base amount, tax-free, for life.</p>
+            </div>
+        </div>
+
+        <!-- ROW 4: Full Summary (renders when core inputs complete) -->
+        <div class="dash-row" id="summary-section" style="display:none;">
+            <div class="section-container">
+                <h2>Your Complete Retirement Picture</h2>
+                <p class="section-subtitle">All sources of income combined — pension, VA compensation, and what your family receives if you pass.</p>
+                <div id="summary-content"></div>
+            </div>
+        </div>
+
+        <!-- ROW 5: Email / Print / Share -->
+        <div class="dash-row">
+            <div id="email-results-container" class="section-container">
+                <h2>Email My Results</h2>
+                <p class="section-subtitle">Get a link to your personalized results — revisit or share anytime.</p>
+                <form id="email-results-form" class="email-results-form">
+                    <div class="email-form-row">
+                        <input type="email" id="email-input" placeholder="your@email.com" required>
+                        <button type="submit" id="email-submit-btn" class="action-btn">Send My Results</button>
+                    </div>
+                    <p id="email-status" class="email-status"></p>
+                    <p class="input-hint">You'll also receive The Better Veteran newsletter — weekly veteran benefit insights. Unsubscribe anytime.</p>
+                </form>
+            </div>
+        </div>
+
+        <div class="action-bar no-print" id="action-bar">
+            <button id="print-btn" class="action-btn">Print My Results</button>
+            <button id="share-btn" class="action-btn action-btn-secondary">Copy Link to Share</button>
+        </div>
+
+        <div class="more-tools">
+            <h3>More Free Veteran Tools</h3>
+            <div class="tools-links">
+                <a href="/100-pt/">P&amp;T Benefits Calculator</a>
+                <a href="/va-combined/">VA Combined Rating Calculator</a>
+                <a href="/va-loan/">VA Loan Calculator</a>
+                <a href="/salary/">Salary Translator</a>
+                <a href="/state-benefits/">Best State for Veterans</a>
+                <a href="/gi-bill-vre/">GI Bill vs. VR&amp;E Calculator</a>
+                <a href="https://www.thebetterveteran.com/" target="_blank" rel="noopener noreferrer">The Better Veteran Newsletter</a>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                Retirement pay estimates are based on 2026 U.S. military basic pay tables (effective January 1, 2026, 3.8% pay raise) and 2026 VA disability compensation rates (effective December 1, 2025, 2.5% COLA).
+                Formulas sourced from 10 U.S.C. § 1409 (High-3), § 1415 (BRS), and DFAS official calculation methods.
+                This tool provides estimates only — actual retirement pay is determined by DFAS based on your official service record.
+                For official calculations, visit <a href="https://www.dfas.mil/RetiredMilitary/plan/estimate/" target="_blank" rel="noopener noreferrer">DFAS.mil</a>.
+            </p>
+            <p class="footer-sources">
+                Sources: DFAS 2026 Pay Tables, VA.gov 2026 Compensation Rate Tables, 10 U.S.C. Ch. 71 (Retirement), 38 C.F.R. § 3.750 (CRDP), 10 U.S.C. § 1413a (CRSC).
+            </p>
+        </footer>
+
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
