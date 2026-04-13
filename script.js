@@ -50,6 +50,12 @@ const deploymentYrsInp  = document.getElementById('deployment-years');
 const estimatePointsBtn = document.getElementById('estimate-points-btn');
 const pointsEstResult   = document.getElementById('points-estimate-result');
 const deploymentPeriods = document.getElementById('deployment-periods');
+const reserveTypeInp    = document.getElementById('reserve-type');
+const resTraditionalBtn = document.getElementById('res-traditional-btn');
+const resAGRBtn         = document.getElementById('res-agr-btn');
+const agrYearsInp       = document.getElementById('agr-years');
+const agrYearsRow       = document.getElementById('agr-years-row');
+const deploymentYrsRow  = document.getElementById('deployment-years-row');
 
 const vaRatingSel       = document.getElementById('va-rating');
 const combatRelatedSel  = document.getElementById('combat-related');
@@ -220,17 +226,37 @@ function onMarriedChange() {
 }
 
 // -------------------------
+// RESERVE TYPE TOGGLE (Traditional vs AGR)
+// -------------------------
+function setReserveType(val) {
+    reserveTypeInp.value = val;
+    resTraditionalBtn.classList.toggle('active', val === 'traditional');
+    resAGRBtn.classList.toggle('active', val === 'agr');
+    agrYearsRow.style.display       = val === 'agr' ? 'block' : 'none';
+    deploymentYrsRow.style.display  = val === 'traditional' ? 'flex' : 'none';
+    pointsEstResult.textContent = '';
+}
+
+resTraditionalBtn.addEventListener('click', () => { setReserveType('traditional'); recalculate(); });
+resAGRBtn.addEventListener('click',         () => { setReserveType('agr');         recalculate(); });
+
+// -------------------------
 // POINTS ESTIMATOR
 // -------------------------
 function estimatePoints() {
-    const qyrs = parseInt(qualifyingYrsInp.value) || 0;
-    const dyrs = parseInt(deploymentYrsInp.value) || 0;
+    const qyrs   = parseInt(qualifyingYrsInp.value) || 0;
+    const isAGR  = reserveTypeInp.value === 'agr';
+    const agrYrs = isAGR ? (parseInt(agrYearsInp.value) || qyrs) : 0;
+    const dyrs   = isAGR ? 0 : (parseInt(deploymentYrsInp.value) || 0);
     if (qyrs < 20) {
         pointsEstResult.textContent = 'Enter at least 20 qualifying years.';
         return;
     }
-    const est = estimateReservePoints(qyrs, dyrs);
-    pointsEstResult.textContent = `Estimated points: ~${est.toLocaleString()} (based on typical drill + ${dyrs} deployment year${dyrs !== 1 ? 's' : ''})`;
+    const est = estimateReservePoints(qyrs, dyrs, agrYrs);
+    const breakdown = isAGR
+        ? `${agrYrs} AGR yrs × 365 pts + ${Math.max(0, qyrs - agrYrs)} traditional yrs × 78 pts`
+        : `typical drill + ${dyrs} deployment year${dyrs !== 1 ? 's' : ''}`;
+    pointsEstResult.textContent = `Estimated points: ~${est.toLocaleString()} (${breakdown})`;
     totalPointsInp.value = est;
     recalculate();
 }
@@ -868,6 +894,7 @@ function attachListeners() {
 
     totalPointsInp.addEventListener('input', recalculate);
     deploymentPeriods.addEventListener('input', recalculate);
+    agrYearsInp.addEventListener('input', recalculate);
     estimatePointsBtn.addEventListener('click', estimatePoints);
 
     vaRatingSel.addEventListener('change', recalculate);

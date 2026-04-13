@@ -183,20 +183,26 @@ export function calcReserveRetirementAge(deploymentPeriods) {
 
 /**
  * Estimates Reserve retirement points for a member who hasn't tracked them.
- * Typical accumulation:
- *   - Drill weekends: 48 points/year (12 per quarter × 4)
- *   - Annual Training: 15 points
- *   - Membership points: 15 points/year
- *   Total typical: ~78 points/year without deployments
  *
- * @param {number} qualifyingYears - Number of qualifying years served
- * @param {number} deploymentYears - Estimated years deployed (each adds ~365 points)
+ * Traditional drill accumulation (~78 pts/year):
+ *   - Drill weekends: 48 pts/year (12 per quarter × 4)
+ *   - Annual Training: 15 pts
+ *   - Membership points: 15 pts/year
+ *
+ * AGR (Active Guard Reserve) accumulation:
+ *   - Full-time active orders = 365 pts/year (same as active duty)
+ *
+ * @param {number} qualifyingYears - Total qualifying years
+ * @param {number} deploymentYears - Years deployed during traditional drill periods (adds ~287 extra pts/yr)
+ * @param {number} agrYears - Years served on AGR / full-time active orders (365 pts/yr)
  * @returns {number} Estimated total points
  */
-export function estimateReservePoints(qualifyingYears, deploymentYears = 0) {
-    const drillPoints = qualifyingYears * 78;
-    const deployPoints = deploymentYears * 287; // 365 - 78 base already counted
-    return Math.round(drillPoints + deployPoints);
+export function estimateReservePoints(qualifyingYears, deploymentYears = 0, agrYears = 0) {
+    const traditionalYears = Math.max(0, qualifyingYears - agrYears);
+    const drillPoints  = traditionalYears * 78;
+    const agrPoints    = agrYears * 365;
+    const deployPoints = deploymentYears * 287; // extra above baseline for traditional drill deployments
+    return Math.round(drillPoints + agrPoints + deployPoints);
 }
 
 // -------------------------

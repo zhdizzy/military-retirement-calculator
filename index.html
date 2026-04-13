@@ -160,6 +160,14 @@
                 <div id="reserve-section" style="display:none;">
                     <div class="section-divider"></div>
                     <p class="section-label">Reserve / National Guard</p>
+
+                    <label>Service Type:</label>
+                    <div class="component-toggle-row" style="margin-bottom:12px;">
+                        <button type="button" class="toggle-btn active" id="res-traditional-btn">Traditional Drill</button>
+                        <button type="button" class="toggle-btn" id="res-agr-btn">AGR / Full-Time</button>
+                    </div>
+                    <input type="hidden" id="reserve-type" value="traditional">
+
                     <div class="projection-grid">
                         <div class="projection-col">
                             <label for="total-points">Total Lifetime Retirement Points:</label>
@@ -168,10 +176,17 @@
                             <div class="points-estimator">
                                 <p class="input-hint" style="margin-bottom:8px;"><strong>Don't have your points?</strong> Estimate them:</p>
                                 <div class="points-est-row">
-                                    <label for="qualifying-years">Qualifying Years:</label>
+                                    <label for="qualifying-years">Total Qualifying Years:</label>
                                     <input type="number" id="qualifying-years" min="20" max="45" placeholder="e.g. 22">
                                 </div>
-                                <div class="points-est-row">
+                                <!-- AGR-only input -->
+                                <div class="points-est-row" id="agr-years-row" style="display:none;">
+                                    <label for="agr-years">Years on AGR / Full-Time Orders:</label>
+                                    <input type="number" id="agr-years" min="0" max="45" placeholder="e.g. 15" value="0">
+                                    <p class="input-hint" style="margin-top:4px;">AGR members earn 365 pts/yr on full-time orders. Enter remaining years as traditional drill above.</p>
+                                </div>
+                                <!-- Traditional-only input -->
+                                <div class="points-est-row" id="deployment-years-row">
                                     <label for="deployment-years">Years Deployed (approx):</label>
                                     <input type="number" id="deployment-years" min="0" max="20" placeholder="e.g. 3" value="0">
                                 </div>
