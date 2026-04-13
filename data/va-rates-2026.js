@@ -133,9 +133,9 @@ export const VA_RATES = {
         with_1parent:                4109.48,
         with_2parents:               4280.38,
         with_1child:                 4072.58,
-        with_1child_spouse:          4308.81,
-        with_1child_spouse_1parent:  4479.71,
-        with_1child_spouse_2parents: 4650.61,
+        with_1child_spouse:          4318.99,
+        with_1child_spouse_1parent:  4489.89,
+        with_1child_spouse_2parents: 4660.79,
         with_1child_1parent:         4243.48,
         with_1child_2parents:        4414.38
     }

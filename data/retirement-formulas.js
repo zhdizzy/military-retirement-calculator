@@ -223,9 +223,25 @@ export function calcChapter61Retirement(militaryRating, yos, high3) {
     const notes = [];
 
     if (militaryRating < 30) {
-        // Severance pay only — one-time payment, not retirement
+        if (yos >= 20) {
+            // 20+ years overrides the <30% severance rule — member qualifies for standard longevity retirement
+            const longevityAmount = yos * 0.025 * high3;
+            notes.push(`With 20+ years of service, you qualify for standard longevity retirement regardless of your DoD rating (${militaryRating}%). The <30% severance rule only applies if you have fewer than 20 years.`);
+            notes.push('Your DoD disability rating is separate from your VA rating. You may receive VA compensation on top of retirement pay — CRDP/CRSC rules apply.');
+            return {
+                eligible: true,
+                monthly: Math.round(longevityAmount),
+                annual: Math.round(longevityAmount * 12),
+                formula: 'longevity',
+                disabilityAmount: 0,
+                longevityAmount: Math.round(longevityAmount),
+                severancePay: 0,
+                notes
+            };
+        }
+        // Under 20 years + under 30% DoD rating = severance only
         const severancePay = 2 * high3 * yos;
-        notes.push('A DoD disability rating below 30% does not qualify for medical retirement — only a one-time severance payment.');
+        notes.push('A DoD disability rating below 30% with fewer than 20 years of service does not qualify for medical retirement — only a one-time severance payment.');
         notes.push('If your VA rating is higher than your DoD rating, you can appeal your DoD rating through the Physical Evaluation Board (PEB).');
         return {
             eligible: false,
