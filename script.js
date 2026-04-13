@@ -865,7 +865,7 @@ async function handleEmailSubmit(e) {
 
     try {
         const shareUrl = buildShareUrl();
-        const resp = await fetch('/.netlify/edge-functions/email-results', {
+        const resp = await fetch('/api/email-results', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, resultsUrl: shareUrl, source: 'military-retirement' })
