@@ -349,12 +349,13 @@ export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRatin
     const crdpAfterTax = (retirementPay * (1 - taxRate)) + vaComp;
 
     // CRSC scenario
-    // The VA waiver = vaComp amount (what would have been offset)
-    // Remaining taxable DoD portion = retirement - vaComp (if positive, else 0)
-    // CRSC payment (tax-free) = min(crscComp, vaComp) — capped at full VA comp
-    const crscPayment = Math.min(crscComp, vaComp);
-    const taxableDoD = Math.max(0, retirementPay - vaComp);
-    const crscGross = taxableDoD + vaComp + crscPayment;
+    // Per 10 USC § 1413a, CRSC cannot exceed the amount of retired pay actually withheld.
+    // The VA offset (withheld amount) = min(retirementPay, vaComp) — you can't offset more than you earn.
+    // CRSC payment (tax-free) = min(combat-related comp, actual offset amount)
+    const vaOffset   = Math.min(retirementPay, vaComp); // actual amount withheld by VA
+    const crscPayment = Math.min(crscComp, vaOffset);    // CRSC capped at the offset, not full VA comp
+    const taxableDoD  = Math.max(0, retirementPay - vaComp);
+    const crscGross   = taxableDoD + vaComp + crscPayment;
     const crscAfterTax = (taxableDoD * (1 - taxRate)) + vaComp + crscPayment;
 
     // Annual difference (CRSC - CRDP after tax)
