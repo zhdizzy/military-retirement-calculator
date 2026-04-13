@@ -56,6 +56,8 @@ const resAGRBtn         = document.getElementById('res-agr-btn');
 const agrYearsInp       = document.getElementById('agr-years');
 const agrYearsRow       = document.getElementById('agr-years-row');
 const deploymentYrsRow  = document.getElementById('deployment-years-row');
+const agrTafmsRow       = document.getElementById('agr-tafms-row');
+const agrTafmsChk       = document.getElementById('agr-tafms');
 
 const vaRatingSel       = document.getElementById('va-rating');
 const combatRelatedSel  = document.getElementById('combat-related');
@@ -232,13 +234,15 @@ function setReserveType(val) {
     reserveTypeInp.value = val;
     resTraditionalBtn.classList.toggle('active', val === 'traditional');
     resAGRBtn.classList.toggle('active', val === 'agr');
-    agrYearsRow.style.display       = val === 'agr' ? 'block' : 'none';
-    deploymentYrsRow.style.display  = val === 'traditional' ? 'flex' : 'none';
+    agrYearsRow.style.display      = val === 'agr' ? 'block' : 'none';
+    agrTafmsRow.style.display      = val === 'agr' ? 'block' : 'none';
+    deploymentYrsRow.style.display = val === 'traditional' ? 'flex' : 'none';
     pointsEstResult.textContent = '';
 }
 
 resTraditionalBtn.addEventListener('click', () => { setReserveType('traditional'); recalculate(); });
 resAGRBtn.addEventListener('click',         () => { setReserveType('agr');         recalculate(); });
+agrTafmsChk.addEventListener('change', recalculate);
 
 // -------------------------
 // POINTS ESTIMATOR
@@ -292,14 +296,25 @@ function recalculate() {
     let chapter61Result  = null;
 
     if (isReserve) {
-        const totalPts = parseInt(totalPointsInp.value) || 0;
-        if (totalPts < 50) {
-            renderHeroPlaceholder('Enter your total retirement points to see your Reserve pay estimate.');
-            return;
+        const isAGR      = reserveTypeInp.value === 'agr';
+        const hasTAFMS   = isAGR && agrTafmsChk.checked;
+
+        if (hasTAFMS) {
+            // AGR with 20+ years TAFMS — qualifies for active duty retirement (immediate pay)
+            retResult = calcActiveDutyRetirement(system, retYos, high3);
+            retResult.notes = retResult.notes || [];
+            retResult.notes.unshift('AGR with 20+ years TAFMS: qualifies for active duty retirement. Pay begins immediately at retirement — not at age 60.');
+            reserveAgeResult = null; // pay is immediate, not deferred
+        } else {
+            const totalPts = parseInt(totalPointsInp.value) || 0;
+            if (totalPts < 50) {
+                renderHeroPlaceholder('Enter your total retirement points to see your Reserve pay estimate.');
+                return;
+            }
+            retResult = calcReserveRetirement(totalPts, high3, system);
+            const periods = parseInt(deploymentPeriods.value) || 0;
+            reserveAgeResult = calcReserveRetirementAge(periods);
         }
-        retResult = calcReserveRetirement(totalPts, high3, system);
-        const periods = parseInt(deploymentPeriods.value) || 0;
-        reserveAgeResult = calcReserveRetirementAge(periods);
     } else if (isChapter61) {
         const dodRating = parseInt(dodRatingSel.value) || 0;
         chapter61Result = calcChapter61Retirement(dodRating, retYos, high3);
