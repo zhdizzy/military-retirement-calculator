@@ -708,15 +708,15 @@ function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, 
         </div>
         <div class="summary-breakdown">
             ${incomeRows}
+            <div class="summary-row total-row">
+                <span class="summary-row-label">Total Gross Monthly Income</span>
+                <span class="summary-row-value">${fmtDec(totalMonthly)}/mo</span>
+            </div>
             ${reserveAgeNote}
             ${tspRow}
             ${tricareRow}
             ${stateTaxRow}
             ${lifetimeRow}
-            <div class="summary-row total-row">
-                <span class="summary-row-label">Total Gross Monthly Income</span>
-                <span class="summary-row-value">${fmtDec(totalMonthly)}/mo</span>
-            </div>
         </div>
         ${isChapter61 && chapter61Result ? `<div class="chapter61-notes">${chapter61Result.notes.map(n => `<p>• ${n}</p>`).join('')}</div>` : ''}
         <p class="tax-note">Estimates based on 2026 pay tables and VA compensation rates. All income figures shown are gross (pre-federal-tax). VA compensation and CRSC are always tax-free. Lifetime pension assumes ${yearsToAge85} years of payments (retirement age ${retAge} → 85) compounded at 2.5% COLA annually — actual COLA adjusts with CPI each December. TRICARE value based on 2026 TRICARE Prime retiree enrollment fees vs. KFF 2024 benchmark marketplace silver plan premiums; actual civilian coverage costs vary by state, age, and plan.</p>
