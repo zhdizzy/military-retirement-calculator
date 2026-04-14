@@ -58,6 +58,12 @@ export const STATE_TAX = {
     WI: { name: 'Wisconsin',            treatment: 'taxable', partialExempt: null,  rate: 0.053 },
     WY: { name: 'Wyoming',              treatment: 'none',    partialExempt: null,  rate: 0 },
     DC: { name: 'Washington D.C.',      treatment: 'taxable', partialExempt: null,  rate: 0.085 },
+    // U.S. Territories
+    PR: { name: 'Puerto Rico',          treatment: 'partial', partialExempt: null,  rate: 0.033 },
+    GU: { name: 'Guam',                 treatment: 'exempt',  partialExempt: null,  rate: 0 },
+    VI: { name: 'U.S. Virgin Islands',  treatment: 'exempt',  partialExempt: null,  rate: 0 },
+    AS: { name: 'American Samoa',       treatment: 'none',    partialExempt: null,  rate: 0 },
+    MP: { name: 'Northern Mariana Islands', treatment: 'none', partialExempt: null,  rate: 0 },
 };
 
 /**
