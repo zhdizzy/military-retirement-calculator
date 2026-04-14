@@ -43,6 +43,7 @@ const high3Manual       = document.getElementById('high3-manual');
 
 const chapter61Section  = document.getElementById('chapter61-section');
 const dodRatingSel      = document.getElementById('dod-rating');
+const ch61CombatChk     = document.getElementById('ch61-combat-related');
 const reserveSection    = document.getElementById('reserve-section');
 const totalPointsInp    = document.getElementById('total-points');
 const qualifyingYrsInp  = document.getElementById('qualifying-years');
@@ -278,7 +279,9 @@ function recalculate() {
     const high3        = getHigh3();
     const retirementRank = retirementRankSel.value;
     const vaRating     = parseInt(vaRatingSel.value) || 0;
-    const taxRate      = parseFloat(taxBracketSel.value) || 0.22;
+    // Chapter 61 combat-related retirement pay is tax-free per 26 USC § 104(a)(4)
+    const ch61TaxFree  = isChapter61 && ch61CombatChk.checked;
+    const taxRate      = ch61TaxFree ? 0 : (parseFloat(taxBracketSel.value) || 0.22);
     const combatType   = combatRelatedSel.value;
     const coverageFrac = parseFloat(sbpCoverageSel.value) || 1.0;
 
@@ -631,7 +634,8 @@ function renderSBP(sbpData, monthlyPension) {
 function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, reserveAge, system, tspValue, dependents = {}, ageAtRetirement = null, isChapter61 = false, chapter61Result = null) {
     const sbpPremium   = sbpElected ? sbpData.premium : 0;
     const netPension   = pension - sbpPremium;
-    const taxRate      = parseFloat(taxBracketSel.value) || 0.22;
+    const ch61TaxFree  = isChapter61 && ch61CombatChk.checked;
+    const taxRate      = ch61TaxFree ? 0 : (parseFloat(taxBracketSel.value) || 0.22);
     const vaRating     = parseInt(vaRatingSel.value) || 0;
     const hasCombat    = combatRelatedSel.value !== 'none';
     const rec          = crdpCrsc.recommendation;
@@ -958,6 +962,7 @@ function attachListeners() {
     ssFraBenefitInp.addEventListener('input', renderSSEstimate);
 
     dodRatingSel.addEventListener('change', recalculate);
+    ch61CombatChk.addEventListener('change', recalculate);
 }
 
 // -------------------------
@@ -988,7 +993,8 @@ function renderScenarioComparison() {
     const system    = systemSel.value;
     const baseYos   = parseInt(retirementYosInp.value) || 20;
     const age       = parseInt(currentAgeInp.value) || 38;
-    const taxRate   = parseFloat(taxBracketSel.value) || 0.22;
+    const ch61Free  = componentSel.value === 'chapter61' && ch61CombatChk.checked;
+    const taxRate   = ch61Free ? 0 : (parseFloat(taxBracketSel.value) || 0.22);
 
     const high3A = getHigh3();
     const high3B = estimateHigh3(rank, scenYos, tig);
