@@ -84,6 +84,11 @@ const crdpCrscResult    = document.getElementById('crdp-crsc-result');
 const sbpResult         = document.getElementById('sbp-result');
 const summarySection    = document.getElementById('summary-section');
 const summaryContent    = document.getElementById('summary-content');
+const divorceToggle     = document.getElementById('divorce-toggle');
+const divorceSection    = document.getElementById('divorce-section');
+const divorceYearsInp   = document.getElementById('divorce-years-married');
+const divorcePercentSel = document.getElementById('divorce-percent');
+const divorceResult     = document.getElementById('divorce-result');
 
 const printBtn          = document.getElementById('print-btn');
 const shareBtn          = document.getElementById('share-btn');
@@ -740,6 +745,49 @@ function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, 
 
     const lifetimeRow = `<div class="summary-row"><span class="summary-row-label">Lifetime Pension Value (to age 85, 2.5% COLA)</span><span class="summary-row-value positive">${fmt(lifetime)}</span></div>`;
 
+    // --- Divorce / Former Spouse Division ---
+    let divorceRow = '';
+    let divorceDeduction = 0;
+    if (divorceToggle.checked) {
+        const divorceYears = parseInt(divorceYearsInp.value) || 0;
+        const divorcePct   = parseFloat(divorcePercentSel.value) || 0.50;
+        const retYos       = parseInt(retirementYosInp.value) || 20;
+
+        if (divorceYears > 0) {
+            // Disposable retired pay = pension minus VA waiver (VA comp offset)
+            // CRDP restores the pension, making it divisible again. CRSC is NOT divisible.
+            const hasCRDP = vaRating >= 50;
+            const vaWaiver = hasCRDP ? 0 : Math.min(pension, vaComp); // CRDP eliminates waiver
+            const disposable = pension - vaWaiver;
+            const coverture = Math.min(divorceYears / retYos, 1.0);
+            divorceDeduction = disposable * coverture * divorcePct;
+
+            const coverturePct = (coverture * 100).toFixed(1);
+            const awardPct = (divorcePct * 100).toFixed(0);
+
+            divorceRow = `
+                <div class="summary-row">
+                    <span class="summary-row-label">Former Spouse Share (${divorceYears}/${retYos} yrs × ${awardPct}% = ${(coverture * divorcePct * 100).toFixed(1)}% of disposable pay)</span>
+                    <span class="summary-row-value negative">−${fmtDec(divorceDeduction)}/mo</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-row-label">Your Take-Home After Division</span>
+                    <span class="summary-row-value">${fmtDec(totalMonthly - divorceDeduction)}/mo</span>
+                </div>`;
+
+            // Render the divorce section card
+            divorceResult.innerHTML = `
+                <div class="dic-sbp-notice" style="border-color: var(--primary-light); background: rgba(43,108,176,0.05); margin-top: 12px;">
+                    <p style="margin:0 0 4px; font-weight:600;">Estimated Former Spouse Share: ${fmtDec(divorceDeduction)}/mo (${fmt(divorceDeduction * 12)}/yr)</p>
+                    <p style="margin:0; font-size:0.88em; color:var(--text-secondary);">Coverture fraction: ${divorceYears} yrs married ÷ ${retYos} yrs service = ${coverturePct}%. Court award: ${awardPct}%. Calculated on disposable retired pay of ${fmtDec(disposable)}/mo${hasCRDP ? ' (includes CRDP — CRDP is divisible)' : ''}. VA disability and CRSC are not divisible.</p>
+                </div>`;
+        } else {
+            divorceResult.innerHTML = '';
+        }
+    } else {
+        divorceResult.innerHTML = '';
+    }
+
     const retAge       = ageAtRetirement || (parseInt(currentAgeInp.value) || 38);
     const yearsToAge85 = Math.max(0, 85 - retAge);
     const vaLabel       = vaRating > 0 ? ' + VA compensation' : '';
@@ -768,6 +816,7 @@ function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, 
                 <span class="summary-row-label">Total Gross Monthly Income</span>
                 <span class="summary-row-value">${fmtDec(totalMonthly)}/mo</span>
             </div>
+            ${divorceRow}
             ${reserveAgeNote}
             ${tspRow}
             ${tricareRow}
@@ -945,6 +994,13 @@ function attachListeners() {
     sbpYesBtn.addEventListener('click', () => setSBP(true));
     sbpNoBtn.addEventListener('click', () => setSBP(false));
     sbpCoverageSel.addEventListener('change', recalculate);
+
+    divorceToggle.addEventListener('change', () => {
+        divorceSection.style.display = divorceToggle.checked ? 'block' : 'none';
+        recalculate();
+    });
+    divorceYearsInp.addEventListener('input', recalculate);
+    divorcePercentSel.addEventListener('change', recalculate);
 
     printBtn.addEventListener('click', () => window.print());
     shareBtn.addEventListener('click', () => {

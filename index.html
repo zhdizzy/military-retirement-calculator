@@ -394,6 +394,38 @@
                 </div>
 
                 <p class="section-footnote">SBP election is made at retirement and is very difficult to change. Premium is 6.5% of your covered base amount. Surviving spouse receives 55% of that base amount, tax-free, for life.</p>
+
+                <div class="section-divider"></div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="divorce-toggle">
+                    <label for="divorce-toggle" class="checkbox-label">I have a former spouse pension division (divorce decree)</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Former Spouse Division -->
+        <div class="dash-row" id="divorce-section" style="display:none;">
+            <div class="section-container">
+                <h2>Former Spouse Pension Division</h2>
+                <p class="section-subtitle">Under the USFSPA (10 USC § 1408), state courts can award a portion of your disposable retired pay to a former spouse.</p>
+                <div class="projection-grid">
+                    <div class="projection-col">
+                        <label for="divorce-years-married">Years Married During Military Service:</label>
+                        <input type="number" id="divorce-years-married" min="1" max="45" placeholder="e.g. 12">
+                    </div>
+                    <div class="projection-col">
+                        <label for="divorce-percent">Court-Awarded Percentage:</label>
+                        <select id="divorce-percent">
+                            <option value="0.50" selected>50% (most common)</option>
+                            <option value="0.40">40%</option>
+                            <option value="0.30">30%</option>
+                            <option value="0.25">25%</option>
+                            <option value="0.20">20%</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="input-hint">Division is calculated on <strong>disposable retired pay</strong> (pension minus VA waiver). VA disability and CRSC are not divisible. CRDP is divisible. The coverture fraction = (years married during service ÷ total years of service) × court percentage.</p>
+                <div id="divorce-result"></div>
             </div>
         </div>
 
