@@ -605,8 +605,19 @@ function renderCRDPvsCRSC(data, vaComp, vaRating, hasCombat, pension, taxRate) {
 // RENDER: SBP
 // -------------------------
 function renderSBP(sbpData, monthlyPension) {
+    const isMarried = vaMarriedSel.value === 'yes';
+    const hasChildren = (parseInt(vaChildrenU18.value) || 0) + (parseInt(vaChildrenO18.value) || 0) > 0;
+    const beneficiaryLabel = isMarried ? 'Spouse Survivor Annuity'
+        : hasChildren ? 'Child Survivor Annuity'
+        : 'Survivor Annuity';
+    const noElectLabel = isMarried
+        ? 'SBP not elected. Your spouse will not receive a survivor annuity from your military retirement.'
+        : hasChildren
+        ? 'SBP not elected. Your children will not receive a survivor annuity from your military retirement.'
+        : 'SBP not elected. No survivor annuity will be paid from your military retirement.';
+
     if (!sbpElected) {
-        sbpResult.innerHTML = `<p class="input-hint" style="text-align:center;">SBP not elected. Your spouse will not receive a survivor annuity from your military retirement.</p>`;
+        sbpResult.innerHTML = `<p class="input-hint" style="text-align:center;">${noElectLabel}</p>`;
         return;
     }
 
@@ -622,7 +633,7 @@ function renderSBP(sbpData, monthlyPension) {
                 <p class="sbp-stat-value">${fmtDec(takeHome)}</p>
             </div>
             <div class="sbp-stat survivor">
-                <p class="sbp-stat-label">Spouse Survivor Annuity</p>
+                <p class="sbp-stat-label">${beneficiaryLabel}</p>
                 <p class="sbp-stat-value">${fmtDec(sbpData.survivorBenefit)}/mo</p>
             </div>
         </div>`;
