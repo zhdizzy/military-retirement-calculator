@@ -794,17 +794,23 @@ function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, 
     const yearsToAge85 = Math.max(0, 85 - retAge);
     const vaLabel       = vaRating > 0 ? ' + VA compensation' : '';
 
+    // Compute true gross (pre-tax pension + tax-free VA comp + CRSC, minus SBP premium)
+    // totalMonthly already reflects after-tax take-home. For gross, use pre-tax pension.
+    const crscPay = (rec === 'crsc') ? crdpCrsc.crsc.crscPayment : 0;
+    const grossPensionForTotal = (rec === 'crsc') ? crdpCrsc.crsc.taxableAmount : pension;
+    const totalGross = grossPensionForTotal + vaComp + crscPay - sbpPremium;
+
     summaryContent.innerHTML = `
         <div class="summary-grid">
             <div class="summary-stat highlight">
-                <p class="summary-stat-label">Gross Monthly Income</p>
+                <p class="summary-stat-label">Net Monthly Take-Home</p>
                 <p class="summary-stat-value">${fmtDec(totalMonthly)}</p>
-                <p class="summary-stat-sub">pension${vaLabel}</p>
+                <p class="summary-stat-sub">after federal tax${vaLabel ? ' · VA comp tax-free' : ''}</p>
             </div>
             <div class="summary-stat">
-                <p class="summary-stat-label">Annual Gross Income</p>
+                <p class="summary-stat-label">Annual Net Take-Home</p>
                 <p class="summary-stat-value">${fmt(totalMonthly * 12)}</p>
-                <p class="summary-stat-sub">pension${vaLabel}</p>
+                <p class="summary-stat-sub">after federal tax</p>
             </div>
             <div class="summary-stat">
                 <p class="summary-stat-label">Lifetime Pension (to 85)</p>
@@ -814,8 +820,12 @@ function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, 
         </div>
         <div class="summary-breakdown">
             ${incomeRows}
+            <div class="summary-row">
+                <span class="summary-row-label">Total Monthly Income (Gross, pre-tax)</span>
+                <span class="summary-row-value">${fmtDec(totalGross)}/mo</span>
+            </div>
             <div class="summary-row total-row">
-                <span class="summary-row-label">Total Gross Monthly Income</span>
+                <span class="summary-row-label">Total Net Monthly Take-Home (after tax)</span>
                 <span class="summary-row-value">${fmtDec(totalMonthly)}/mo</span>
             </div>
             ${divorceRow}
