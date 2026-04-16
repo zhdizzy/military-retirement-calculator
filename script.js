@@ -368,7 +368,9 @@ function recalculate() {
         }
     }
 
-    const crdpCrsc = calcCRDPvsCRSC(monthlyPension, vaComp, crscComp, taxRate, vaRating, hasCombat);
+    // Chapter 61 with <20 years: CRDP does not apply (10 USC § 1414)
+    const ch61NoCRDP = isChapter61 && retYos < 20;
+    const crdpCrsc = calcCRDPvsCRSC(monthlyPension, vaComp, crscComp, taxRate, vaRating, hasCombat, ch61NoCRDP);
 
     // --- SBP ---
     const sbpData = calcSBP(monthlyPension, coverageFrac);

@@ -261,24 +261,27 @@ export function calcChapter61Retirement(militaryRating, yos, high3) {
         };
     }
 
-    const disabilityAmount = (militaryRating / 100) * high3;
-    const longevityAmount  = yos * 0.025 * high3;
+    // Disability formula capped at 75% per 10 USC § 1401
+    const disabilityPct    = Math.min(militaryRating / 100, 0.75);
+    const disabilityAmount = disabilityPct * high3;
+    const longevityAmount  = Math.min(yos * 0.025, 0.75) * high3;
     const monthly          = Math.max(disabilityAmount, longevityAmount);
     const formula          = longevityAmount >= disabilityAmount ? 'longevity' : 'disability';
 
     if (formula === 'longevity') {
-        notes.push(`Longevity formula wins (${yos} yrs × 2.5% × High-3 = ${(yos * 2.5).toFixed(1)}% multiplier). This is the same formula as standard active duty retirement.`);
+        notes.push(`Longevity formula wins (${yos} yrs × 2.5% × High-3 = ${(Math.min(yos * 2.5, 75)).toFixed(1)}% multiplier). This is the same formula as standard active duty retirement.`);
     } else {
-        notes.push(`Disability formula wins (${militaryRating}% DoD rating × High-3). Your DoD rating multiplier exceeds your YOS-based multiplier.`);
+        const cappedNote = militaryRating > 75 ? ` (capped from ${militaryRating}% — 75% is the statutory maximum per 10 USC § 1401)` : '';
+        notes.push(`Disability formula wins (${(disabilityPct * 100).toFixed(0)}% × High-3${cappedNote}). Your DoD rating multiplier exceeds your YOS-based multiplier.`);
     }
 
     if (yos >= 20) {
-        notes.push('With 20+ years, you qualify for both Chapter 61 and standard retirement. The higher formula is applied automatically.');
+        notes.push('With 20+ years, you qualify for both Chapter 61 and standard retirement. CRDP applies at 50%+ VA rating — full concurrent receipt.');
     } else {
-        notes.push('Chapter 61 retirees with <20 years are placed on the PDRL (Permanent Disability Retired List) or TDRL (Temporary, if rating may change). TDRL lasts up to 5 years.');
+        notes.push('Chapter 61 retirees with <20 years are placed on the PDRL or TDRL. IMPORTANT: CRDP does not apply to Chapter 61 retirees with under 20 years of service (10 USC § 1414). Your pension is offset by your VA comp. CRSC can recover the offset if your disabilities are combat-related.');
     }
 
-    notes.push('Your DoD disability rating is separate from your VA rating. You may receive VA compensation on top of Chapter 61 retirement pay — CRDP/CRSC rules apply.');
+    notes.push('Your DoD disability rating is separate from your VA rating. You may receive VA compensation on top of Chapter 61 retirement pay.');
 
     return {
         eligible: true,
@@ -339,8 +342,8 @@ export function calcSBP(retirementPay, coverageFraction = 1.0) {
  * @param {boolean} hasCombatRelated - Whether any disabilities are combat-related
  * @returns {object} Comparison data
  */
-export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRating, hasCombatRelated) {
-    const crdpEligible = vaRating >= 50;
+export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRating, hasCombatRelated, crdpBlocked = false) {
+    const crdpEligible = !crdpBlocked && vaRating >= 50;
     const crscEligible = hasCombatRelated && crscComp > 0;
 
     // CRDP scenario
