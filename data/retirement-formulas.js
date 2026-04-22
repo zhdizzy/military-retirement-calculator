@@ -342,7 +342,7 @@ export function calcSBP(retirementPay, coverageFraction = 1.0) {
  * @param {boolean} hasCombatRelated - Whether any disabilities are combat-related
  * @returns {object} Comparison data
  */
-export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRating, hasCombatRelated, crdpBlocked = false) {
+export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRating, hasCombatRelated, crdpBlocked = false, ch61LongevityCap = null) {
     const crdpEligible = !crdpBlocked && vaRating >= 50;
     const crscEligible = hasCombatRelated && crscComp > 0;
 
@@ -354,10 +354,17 @@ export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRatin
     // CRSC scenario
     // Per 10 USC § 1413a, CRSC cannot exceed the amount of retired pay actually withheld.
     // The VA offset (withheld amount) = min(retirementPay, vaComp) — you can't offset more than you earn.
-    // CRSC payment (tax-free) = min(combat-related comp, actual offset amount)
-    const vaOffset   = Math.min(retirementPay, vaComp); // actual amount withheld by VA
-    const crscPayment = Math.min(crscComp, vaOffset);    // CRSC capped at the offset, not full VA comp
-    const taxableDoD  = Math.max(0, retirementPay - vaComp);
+    const vaOffset   = Math.min(retirementPay, vaComp);
+    let crscPayment  = Math.min(crscComp, vaOffset);
+    const taxableDoD = Math.max(0, retirementPay - vaComp);
+
+    // Chapter 61 under 20 years: additional CRSC cap per 10 USC § 1413a(b)(3)(B)
+    // CRSC + residual retired pay cannot exceed the hypothetical longevity amount (YOS × 2.5% × High-3)
+    if (ch61LongevityCap !== null) {
+        const maxCRSC = Math.max(0, ch61LongevityCap - taxableDoD);
+        crscPayment = Math.min(crscPayment, maxCRSC);
+    }
+
     const crscGross   = taxableDoD + vaComp + crscPayment;
     const crscAfterTax = (taxableDoD * (1 - taxRate)) + vaComp + crscPayment;
 

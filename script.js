@@ -369,8 +369,10 @@ function recalculate() {
     }
 
     // Chapter 61 with <20 years: CRDP does not apply (10 USC § 1414)
+    // CRSC is further capped: CRSC + residual ≤ YOS × 2.5% × High-3 per § 1413a(b)(3)(B)
     const ch61NoCRDP = isChapter61 && retYos < 20;
-    const crdpCrsc = calcCRDPvsCRSC(monthlyPension, vaComp, crscComp, taxRate, vaRating, hasCombat, ch61NoCRDP);
+    const ch61LongevityCap = ch61NoCRDP ? Math.min(retYos * 0.025, 0.75) * high3 : null;
+    const crdpCrsc = calcCRDPvsCRSC(monthlyPension, vaComp, crscComp, taxRate, vaRating, hasCombat, ch61NoCRDP, ch61LongevityCap);
 
     // --- SBP ---
     const sbpData = calcSBP(monthlyPension, coverageFrac);
