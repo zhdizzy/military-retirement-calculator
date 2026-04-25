@@ -347,9 +347,17 @@ export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRatin
     const crscEligible = hasCombatRelated && crscComp > 0;
 
     // CRDP scenario
-    // Full DoD retirement restored (taxable) + full VA comp (tax-free)
-    const crdpGross = retirementPay + vaComp;
-    const crdpAfterTax = (retirementPay * (1 - taxRate)) + vaComp;
+    // Per 10 USC § 1414(b)(1), a Chapter 61 retiree's CRDP-payable retired pay is reduced
+    // by the amount disability retired pay exceeds the longevity equivalent (YOS × 2.5% × High-3).
+    // The DFAS RAS shows the full disability entitlement, but only the longevity portion is
+    // actually paid under concurrent receipt. For non-Ch.61 retirees ch61LongevityCap is null
+    // and no cap applies.
+    const crdpRetirementPay = (ch61LongevityCap !== null)
+        ? Math.min(retirementPay, ch61LongevityCap)
+        : retirementPay;
+    const crdpCapped = ch61LongevityCap !== null && retirementPay > ch61LongevityCap;
+    const crdpGross = crdpRetirementPay + vaComp;
+    const crdpAfterTax = (crdpRetirementPay * (1 - taxRate)) + vaComp;
 
     // CRSC scenario
     // Per 10 USC § 1413a, CRSC cannot exceed the amount of retired pay actually withheld.
@@ -358,8 +366,9 @@ export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRatin
     let crscPayment  = Math.min(crscComp, vaOffset);
     const taxableDoD = Math.max(0, retirementPay - vaComp);
 
-    // Chapter 61 under 20 years: additional CRSC cap per 10 USC § 1413a(b)(3)(B)
-    // CRSC + residual retired pay cannot exceed the hypothetical longevity amount (YOS × 2.5% × High-3)
+    // Chapter 61 longevity cap on CRSC: CRSC + residual retired pay ≤ longevity amount.
+    // For <20 YOS this is § 1413a(b)(3)(B); for 20+ YOS the same ceiling applies via the
+    // interaction of § 1413a(b)(2) and § 1414(b)(1).
     if (ch61LongevityCap !== null) {
         const maxCRSC = Math.max(0, ch61LongevityCap - taxableDoD);
         crscPayment = Math.min(crscPayment, maxCRSC);
@@ -382,8 +391,11 @@ export function calcCRDPvsCRSC(retirementPay, vaComp, crscComp, taxRate, vaRatin
         crdp: {
             gross: Math.round(crdpGross * 100) / 100,
             afterTax: Math.round(crdpAfterTax * 100) / 100,
-            taxableAmount: Math.round(retirementPay * 100) / 100,
-            taxFreeAmount: Math.round(vaComp * 100) / 100
+            taxableAmount: Math.round(crdpRetirementPay * 100) / 100,
+            taxFreeAmount: Math.round(vaComp * 100) / 100,
+            capped: crdpCapped,
+            grossEntitlement: Math.round(retirementPay * 100) / 100,
+            longevityCap: ch61LongevityCap !== null ? Math.round(ch61LongevityCap * 100) / 100 : null
         },
         crsc: {
             gross: Math.round(crscGross * 100) / 100,

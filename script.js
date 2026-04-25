@@ -368,11 +368,20 @@ function recalculate() {
         }
     }
 
-    // Chapter 61 with <20 years: CRDP does not apply (10 USC § 1414)
-    // CRSC is further capped: CRSC + residual ≤ YOS × 2.5% × High-3 per § 1413a(b)(3)(B)
+    // Chapter 61 longevity caps under 10 USC ch. 71/CRSC:
+    // - <20 YOS: CRDP entirely blocked per § 1414(b)(2). CRSC + residual capped per § 1413a(b)(3)(B).
+    // - 20+ YOS: CRDP-payable retired pay capped at longevity per § 1414(b)(1) (DFAS shows full
+    //            disability on the RAS but only the longevity portion is paid under CRDP).
+    // The cap value (YOS × 2.5% × High-3, max 75%) applies in both cases — only the eligibility differs.
     const ch61NoCRDP = isChapter61 && retYos < 20;
-    const ch61LongevityCap = ch61NoCRDP ? Math.min(retYos * 0.025, 0.75) * high3 : null;
+    const ch61LongevityCap = isChapter61 ? Math.min(retYos * 0.025, 0.75) * high3 : null;
     const crdpCrsc = calcCRDPvsCRSC(monthlyPension, vaComp, crscComp, taxRate, vaRating, hasCombat, ch61NoCRDP, ch61LongevityCap);
+
+    // Effective payable retired pay for hero/summary display. Differs from monthlyPension
+    // (gross entitlement on the RAS) only when § 1414(b)(1) caps Ch.61 disability retired
+    // pay at the longevity amount under CRDP.
+    const ch61CrdpCapApplies = isChapter61 && crdpCrsc.crdp.capped && crdpCrsc.crdpEligible && crdpCrsc.recommendation === 'crdp';
+    const effectivePension = ch61CrdpCapApplies ? crdpCrsc.crdp.taxableAmount : monthlyPension;
 
     // --- SBP ---
     const sbpData = calcSBP(monthlyPension, coverageFrac);
@@ -381,7 +390,7 @@ function recalculate() {
     const ageAtRetirement = isReserve && reserveAgeResult
         ? reserveAgeResult.ageYears
         : retirementAge;
-    const lifetimeVal = calcLifetimeValue(monthlyPension, ageAtRetirement);
+    const lifetimeVal = calcLifetimeValue(effectivePension, ageAtRetirement);
 
     // --- BRS TSP Estimate ---
     let tspValue = null;
@@ -391,10 +400,11 @@ function recalculate() {
     }
 
     // ---- RENDER ----
-    renderHero(monthlyPension, retResult, system, isReserve, high3, retYos, lifetimeVal, tspValue, retirementRank, reserveAgeResult, vaComp, taxRate, isChapter61, chapter61Result);
+    const grossEntitlementForHero = ch61CrdpCapApplies ? monthlyPension : null;
+    renderHero(effectivePension, retResult, system, isReserve, high3, retYos, lifetimeVal, tspValue, retirementRank, reserveAgeResult, vaComp, taxRate, isChapter61, chapter61Result, grossEntitlementForHero, crdpCrsc.crdp.longevityCap);
     renderCRDPvsCRSC(crdpCrsc, vaComp, vaRating, hasCombat, monthlyPension, taxRate);
-    renderSBP(sbpData, monthlyPension);
-    renderSummary(monthlyPension, vaComp, sbpData, crdpCrsc, lifetimeVal, isReserve, reserveAgeResult, system, tspValue, dependents, ageAtRetirement, isChapter61, chapter61Result);
+    renderSBP(sbpData, effectivePension);
+    renderSummary(effectivePension, vaComp, sbpData, crdpCrsc, lifetimeVal, isReserve, reserveAgeResult, system, tspValue, dependents, ageAtRetirement, isChapter61, chapter61Result, monthlyPension);
     renderScenarioComparison();
     renderSSEstimate();
 }
@@ -407,20 +417,22 @@ function renderHeroPlaceholder(msg) {
     heroDom.innerHTML = `<p class="hero-placeholder-text">${msg || 'Fill in your service profile below to see your estimated retirement pay.'}</p>`;
 }
 
-function renderHero(monthly, retResult, system, isReserve, high3, retYos, lifetime, tspValue, rank, reserveAge, vaComp, taxRate, isChapter61 = false, chapter61Result = null) {
+function renderHero(monthly, retResult, system, isReserve, high3, retYos, lifetime, tspValue, rank, reserveAge, vaComp, taxRate, isChapter61 = false, chapter61Result = null, grossEntitlement = null, longevityCap = null) {
     const sysLabel     = isChapter61
         ? `Chapter 61 · ${chapter61Result?.formula === 'longevity' ? 'Longevity Formula' : 'Disability Formula'}`
         : systemLabel(system);
     const pensionAfterTax = monthly * (1 - taxRate);
     const totalMonthly = monthly + vaComp;
     const hasVA        = vaComp > 0;
+    const isCh61Capped = grossEntitlement !== null && grossEntitlement > monthly;
 
     const heroAmount   = hasVA ? totalMonthly : monthly;
     const heroLabel    = hasVA ? 'Estimated Monthly Income (Pension + VA)' : 'Estimated Monthly Retirement Pay (Gross)';
 
+    const pensionSubLabel = isCh61Capped ? 'Pension (CRDP payable)' : 'Pension (gross)';
     let subCards = `
         <div class="hero-sub-card">
-            <p class="hero-sub-label">Pension (gross)</p>
+            <p class="hero-sub-label">${pensionSubLabel}</p>
             <p class="hero-sub-value">${fmtDec(monthly)}</p>
         </div>
         <div class="hero-sub-card">
@@ -456,14 +468,19 @@ function renderHero(monthly, retResult, system, isReserve, high3, retYos, lifeti
     }
 
     const pensionNote = hasVA
-        ? `<p class="hero-detail"><strong>${rank}</strong> &middot; Pension: <strong>${fmtDec(monthly)}</strong> gross &middot; VA: <strong>${fmtDec(vaComp)}</strong> tax-free</p>`
+        ? `<p class="hero-detail"><strong>${rank}</strong> &middot; Pension: <strong>${fmtDec(monthly)}</strong>${isCh61Capped ? ' (capped)' : ' gross'} &middot; VA: <strong>${fmtDec(vaComp)}</strong> tax-free</p>`
         : `<p class="hero-detail"><strong>${rank}</strong> &middot; High-3: <strong>${fmtDec(high3)}</strong> &middot; ${isReserve ? 'Reserve/Guard' : `${retYos} yrs`}</p>`;
+
+    const ch61CapNote = isCh61Capped
+        ? `<p class="hero-detail" style="margin-top:6px; font-style:italic; color:var(--text-secondary);">Your DFAS RAS will show <strong>${fmtDec(grossEntitlement)}/mo</strong> (full Chapter 61 disability entitlement). Per <a href="https://www.law.cornell.edu/uscode/text/10/1414" target="_blank" rel="noopener">10 USC § 1414(b)(1)</a>, CRDP-payable retired pay is capped at the longevity equivalent (${fmtDec(longevityCap)}/mo).</p>`
+        : '';
 
     heroDom.className = 'hero-result';
     heroDom.innerHTML = `
         <p class="hero-label">${heroLabel}</p>
         <p class="hero-amount">${fmtDec(heroAmount)}</p>
         ${pensionNote}
+        ${ch61CapNote}
         ${tspNote}
         <span class="hero-system-badge">${sysLabel}</span>
         <div class="hero-sub-cards">${subCards}</div>
@@ -504,21 +521,32 @@ function renderCRDPvsCRSC(data, vaComp, vaRating, hasCombat, pension, taxRate) {
         html += `<div class="eligibility-note">⚠️ <strong>CRDP requires a VA rating of 50% or higher.</strong> At your current rating (${vaRating}%), your DoD retirement pay is offset dollar-for-dollar by your VA compensation. CRSC (if combat-related) can eliminate that offset.</div>`;
     }
 
+    // Use the (potentially capped) CRDP-payable retired pay from data.crdp.taxableAmount
+    // rather than the raw `pension` param. For Ch.61 / 20+ YOS / disability-wins, this
+    // reflects the § 1414(b)(1) longevity cap on concurrent receipt.
+    const crdpPayable = data.crdp.taxableAmount;
+
+    const ch61CapNote = data.crdp.capped
+        ? `<p style="font-size:0.78em; color:var(--text-secondary); margin-top:10px; font-style:italic;">RAS shows ${fmtDec(data.crdp.grossEntitlement)}/mo (full Chapter 61 disability). Per <a href="https://www.law.cornell.edu/uscode/text/10/1414" target="_blank" rel="noopener">10 USC § 1414(b)(1)</a>, CRDP-payable retired pay is capped at the longevity equivalent (${fmtDec(data.crdp.longevityCap)}/mo).</p>`
+        : '';
+
     if (!hasCombat) {
         // No combat — only CRDP applies, show clean single card
-        const pensionAfterTax = pension * (1 - taxRate);
+        const pensionAfterTax = crdpPayable * (1 - taxRate);
         const totalAfterTax   = pensionAfterTax + vaComp;
+        const pensionLabel    = data.crdp.capped ? 'Military pension (capped at longevity)' : 'Military pension (gross)';
         html += `
             <div class="comp-card crdp winner" style="max-width:480px; margin:0 auto;">
                 <p class="comp-card-label">CRDP — Concurrent Receipt (Automatic)</p>
                 <p class="comp-card-amount">${fmtDec(totalAfterTax)}/mo total take-home</p>
                 ${buildBreakdown([
-                    { label: 'Military pension (gross)', val: fmtDec(pension) + '/mo', cls: 'taxable' },
-                    { label: `Federal tax (${(taxRate*100).toFixed(0)}%)`, val: '−' + fmtDec(pension * taxRate) + '/mo', cls: 'deduction' },
+                    { label: pensionLabel, val: fmtDec(crdpPayable) + '/mo', cls: 'taxable' },
+                    { label: `Federal tax (${(taxRate*100).toFixed(0)}%)`, val: '−' + fmtDec(crdpPayable * taxRate) + '/mo', cls: 'deduction' },
                     { label: 'Pension after tax', val: fmtDec(pensionAfterTax) + '/mo' },
                     { label: 'VA compensation (always tax-free)', val: '+' + fmtDec(vaComp) + '/mo', cls: 'tax-free' },
                     { label: 'Total monthly take-home', val: fmtDec(totalAfterTax) + '/mo', cls: 'total' }
                 ])}
+                ${ch61CapNote}
                 <p style="font-size:0.75em; color:var(--text-secondary); margin-top:10px; font-style:italic;">CRSC not available — no combat-related disabilities indicated.</p>
             </div>`;
         crdpCrscResult.innerHTML = html;
@@ -528,8 +556,8 @@ function renderCRDPvsCRSC(data, vaComp, vaRating, hasCombat, pension, taxRate) {
     // Side-by-side comparison — show what changes between CRDP and CRSC
     const rec = data.recommendation;
 
-    // CRDP numbers
-    const crdpPensionAfterTax = pension * (1 - taxRate);
+    // CRDP numbers — use the (potentially § 1414(b)(1)-capped) payable retired pay
+    const crdpPensionAfterTax = crdpPayable * (1 - taxRate);
     const crdpTotal           = crdpPensionAfterTax + vaComp;
 
     // CRSC numbers
@@ -542,16 +570,18 @@ function renderCRDPvsCRSC(data, vaComp, vaRating, hasCombat, pension, taxRate) {
     html += `<div class="crdp-crsc-comparison">`;
 
     // CRDP card
+    const crdpPensionLabel = data.crdp.capped ? 'Pension (capped at longevity, taxable)' : 'Pension (gross, taxable)';
     html += `
         <div class="comp-card crdp ${rec === 'crdp' ? 'winner' : ''}">
             <p class="comp-card-label">CRDP${data.crdpEligible ? ' — Automatic' : ' — Not Eligible'}</p>
             <p class="comp-card-amount">${fmtDec(crdpTotal)}/mo take-home</p>
             ${buildBreakdown([
-                { label: 'Pension (gross, taxable)', val: fmtDec(pension) + '/mo', cls: 'taxable' },
-                { label: `Federal tax (${(taxRate*100).toFixed(0)}%)`, val: '−' + fmtDec(pension * taxRate) + '/mo', cls: 'deduction' },
+                { label: crdpPensionLabel, val: fmtDec(crdpPayable) + '/mo', cls: 'taxable' },
+                { label: `Federal tax (${(taxRate*100).toFixed(0)}%)`, val: '−' + fmtDec(crdpPayable * taxRate) + '/mo', cls: 'deduction' },
                 { label: 'VA compensation (tax-free)', val: '+' + fmtDec(vaComp) + '/mo', cls: 'tax-free' },
                 { label: 'Total monthly take-home', val: fmtDec(crdpTotal) + '/mo', cls: 'total' }
             ])}
+            ${data.crdp.capped ? `<p style="font-size:0.72em; color:var(--text-secondary); margin-top:8px; font-style:italic;">RAS shows ${fmtDec(data.crdp.grossEntitlement)}/mo. Capped per § 1414(b)(1).</p>` : ''}
             ${rec === 'crdp' ? '<span class="comp-card-winner-badge">Recommended</span>' : ''}
         </div>`;
 
@@ -651,7 +681,7 @@ function renderSBP(sbpData, monthlyPension) {
 // -------------------------
 // RENDER: FULL SUMMARY
 // -------------------------
-function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, reserveAge, system, tspValue, dependents = {}, ageAtRetirement = null, isChapter61 = false, chapter61Result = null) {
+function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, reserveAge, system, tspValue, dependents = {}, ageAtRetirement = null, isChapter61 = false, chapter61Result = null, grossEntitlement = null) {
     const sbpPremium   = sbpElected ? sbpData.premium : 0;
     const netPension   = pension - sbpPremium;
     const ch61TaxFree  = isChapter61 && ch61CombatChk.checked;
@@ -659,6 +689,7 @@ function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, 
     const vaRating     = parseInt(vaRatingSel.value) || 0;
     const hasCombat    = combatRelatedSel.value !== 'none';
     const rec          = crdpCrsc.recommendation;
+    const isCh61Capped = grossEntitlement !== null && grossEntitlement > pension;
 
     // Determine best total take-home
     let totalMonthly = 0;
@@ -690,10 +721,12 @@ function renderSummary(pension, vaComp, sbpData, crdpCrsc, lifetime, isReserve, 
             incomeRows += `<div class="summary-row"><span class="summary-row-label">SBP Premium</span><span class="summary-row-value negative">−${fmtDec(sbpPremium)}/mo</span></div>`;
         }
     } else {
-        // CRDP scenario
+        // CRDP scenario — pension here is already the (potentially § 1414(b)(1)-capped) payable amount
         totalMonthly = pension * (1 - taxRate) + vaComp - sbpPremium;
+        const retLabel = isCh61Capped ? 'Military Retirement (capped at longevity, taxable)' : 'Military Retirement (taxable)';
         incomeRows = `
-            <div class="summary-row"><span class="summary-row-label">Military Retirement (taxable)</span><span class="summary-row-value">${fmtDec(pension)}/mo gross → ${fmtDec(pension*(1-taxRate))}/mo after tax</span></div>
+            <div class="summary-row"><span class="summary-row-label">${retLabel}</span><span class="summary-row-value">${fmtDec(pension)}/mo${isCh61Capped ? ' payable' : ' gross'} → ${fmtDec(pension*(1-taxRate))}/mo after tax</span></div>
+            ${isCh61Capped ? `<div class="summary-row" style="font-size:0.85em; color:var(--text-secondary);"><span>RAS shows ${fmtDec(grossEntitlement)}/mo (full Ch.61 disability entitlement). CRDP-payable amount capped at longevity per 10 USC § 1414(b)(1).</span></div>` : ''}
             <div class="summary-row"><span class="summary-row-label">VA Compensation (tax-free)</span><span class="summary-row-value positive">${fmtDec(vaComp)}/mo</span></div>
         `;
         if (sbpElected) {
